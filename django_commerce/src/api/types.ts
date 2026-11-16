@@ -5,29 +5,24 @@ export interface Category {
   parent: number | null
 }
 
-export interface Tag {
-  id: number
-  name: string
-}
-
 export interface Review {
   id: number
   rating: number
   comment: string
   user: number
-  product: number
+  product: string
   created_at: string
 }
 
 export interface Product {
-  id: number
+  id: string
   name: string
-  description: string
+  image: string
   price: string
+  stars: string
   stock: number
   is_active: boolean
   categories: Category[]
-  tags: Tag[]
   reviews: Review[]
   created_at: string
 }

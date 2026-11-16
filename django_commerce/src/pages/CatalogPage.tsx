@@ -380,7 +380,7 @@ export function CatalogPage() {
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
                 Utilisez la recherche ci-dessus ou sélectionnez un rayon. Les filtres
-                avancés (prix, note, stock, tags) apparaissent avec les résultats.
+                avancés (prix, note, stock) apparaissent avec les résultats.
               </p>
             </div>
 

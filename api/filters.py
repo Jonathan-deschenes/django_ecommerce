@@ -1,6 +1,5 @@
 import django_filters
 from .models import Product
-from django.db.models import Avg
 
 
 class ProductPriceFilter(django_filters.FilterSet):
@@ -10,17 +9,13 @@ class ProductPriceFilter(django_filters.FilterSet):
         field_name='price', lookup_expr='lte')
     in_stock = django_filters.BooleanFilter(method='filter_in_stock')
     min_rating = django_filters.NumberFilter(
-        field_name='avg_rating', lookup_expr='gte')
+        field_name='stars', lookup_expr='gte')
     max_rating = django_filters.NumberFilter(
-        field_name='avg_rating', lookup_expr='lte')
+        field_name='stars', lookup_expr='lte')
 
     class Meta:
         model = Product
-        fields = ['min_price', 'max_price', 'is_active', 'categories', 'tags']
-
-    def filter_queryset(self, queryset):
-        queryset = queryset.annotate(avg_rating=Avg('reviews__rating'))
-        return super().filter_queryset(queryset)
+        fields = ['min_price', 'max_price', 'is_active', 'categories']
 
     def filter_in_stock(self, queryset, name, value):
         if value:

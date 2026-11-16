@@ -2,7 +2,6 @@ import type {
   Category,
   PaginatedResponse,
   Product,
-  Tag,
   User,
 } from './types'
 
@@ -67,7 +66,6 @@ export interface ProductListParams {
   inStock?: boolean
   isActive?: boolean
   categoryIds?: number[]
-  tagIds?: number[]
 }
 
 export function listProducts(
@@ -107,7 +105,6 @@ export function listProducts(
   }
 
   params.categoryIds?.forEach((id) => searchParams.append('categories', String(id)))
-  params.tagIds?.forEach((id) => searchParams.append('tags', String(id)))
 
   return request<PaginatedResponse<Product>>(
     `/api/product/?${searchParams.toString()}`,
@@ -115,16 +112,12 @@ export function listProducts(
   )
 }
 
-export function retrieveProduct(id: number, signal?: AbortSignal): Promise<Product> {
-  return request<Product>(`/api/product/${id}/`, signal)
+export function retrieveProduct(id: string, signal?: AbortSignal): Promise<Product> {
+  return request<Product>(`/api/product/${encodeURIComponent(id)}/`, signal)
 }
 
 export function listAllCategories(signal?: AbortSignal): Promise<Category[]> {
   return getAllPages<Category>('/api/category/', signal)
-}
-
-export function listAllTags(signal?: AbortSignal): Promise<Tag[]> {
-  return getAllPages<Tag>('/api/tag/', signal)
 }
 
 export function searchCategories(
@@ -141,24 +134,6 @@ export function searchCategories(
 
   return request<PaginatedResponse<Category>>(
     `/api/category/?${searchParams.toString()}`,
-    signal,
-  )
-}
-
-export function searchTags(
-  search: string,
-  limit = 50,
-  offset = 0,
-  signal?: AbortSignal,
-): Promise<PaginatedResponse<Tag>> {
-  const searchParams = new URLSearchParams({
-    search,
-    limit: String(limit),
-    offset: String(offset),
-  })
-
-  return request<PaginatedResponse<Tag>>(
-    `/api/tag/?${searchParams.toString()}`,
     signal,
   )
 }

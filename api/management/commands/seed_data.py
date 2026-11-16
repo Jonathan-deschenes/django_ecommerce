@@ -1,17 +1,27 @@
-from django.core.management.base import BaseCommand
+import random
+import traceback
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+import pandas as pd
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
-from api.models import *
-from django.utils import timezone
+from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils import timezone
 from django.utils.text import slugify
-from datetime import datetime
-import random
-import pandas as pd
-
-# Faker setup
 from faker import Faker
+
+from api.models import *
+
 faker = Faker()
+User = get_user_model()
+
+
+def to_decimal(value):
+    if pd.isna(value):
+        return None
+    return Decimal(str(value)).quantize(Decimal("0.01"))
 
 
 class Command(BaseCommand):
@@ -29,152 +39,118 @@ class Command(BaseCommand):
         line = f"{datetime.now()} [{tag.upper()}] {text} {count}"
         self.stdout.write(style(line) if style else line)
 
+    def progress(self, text, k, n, step=5_000):
+        """Log only every `step` items (and on the last one)."""
+        if (k + 1) % step == 0 or k + 1 == n:
+            self.log(text, k=k, n=n)
+
     def handle(self, *args, **options):
         try:
-            with transaction.atomic():
-                self.seed()
+            self.seed()   # no global transaction: each batch commits on its own
         except Exception as e:
             self.log(f"An unexpected error occured: {e}", "error")
+            traceback.print_exc()
 
     def seed(self):
+        AMOUNT_SEEDING = 2_000_000
+        BATCH = 5_000
+        CSV = "data/amz_ca_total_products_data_processed.csv"
 
-        df = pd.read_csv(
-            "data/amz_ca_total_products_data_processed.csv", nrows=10)
-        print(df.head())
+        # 1. Categories (read only that one column)
+        self.log("Starting Category seeding...")
+        names = pd.read_csv(CSV, usecols=["categoryName"])[
+            "categoryName"].dropna().unique()
+        seen, temp_categories = set(), []
+        for name in names:
+            slug = slugify(name)
+            if slug not in seen:
+                seen.add(slug)
+                temp_categories.append(Category(name=name, slug=slug))
+        Category.objects.bulk_create(
+            temp_categories, batch_size=BATCH, ignore_conflicts=True)
+        cat_by_slug = {
+            c.slug: c.pk for c in Category.objects.filter(slug__in=seen)}
 
-        # # Logging
-        # self.log("Starting tag seeding...")
+        # 2. Users (200k, inserted batch by batch)
+        self.log("Starting User seeding...")
+        hashed = make_password("test1234")
+        userLength = AMOUNT_SEEDING // 10
+        user_ids = []
+        for start in range(0, userLength, BATCH):
+            batch = [
+                User(
+                    username=f"{faker.user_name()}_{i}",
+                    first_name=faker.first_name(),
+                    last_name=faker.last_name(),
+                    email=f"user{i}@example.com",
+                    password=hashed,
+                )
+                for i in range(start, min(start + BATCH, userLength))
+            ]
+            with transaction.atomic():
+                created = User.objects.bulk_create(batch)
+            user_ids.extend(u.pk for u in created)
+            self.log("seeding users", k=min(
+                start + BATCH, userLength) - 1, n=userLength)
 
-        # # 1. Tags seeding
-        # tempTags = []
-        # tagLength = 100
-        # for i in range(tagLength):
-        #     # Logging
-        #     self.log("seeding tag", k=i, n=tagLength)
+        # 3. Products + category links, one CSV chunk at a time
+        self.log("Starting Product seeding...")
+        CatThrough = Product.categories.through
+        product_ids = []
+        done = 0
+        for chunk in pd.read_csv(CSV, nrows=AMOUNT_SEEDING, chunksize=BATCH):
+            chunk = chunk.dropna(
+                subset=["asin", "title"]).drop_duplicates("asin")
 
-        #     tag = Tag(name=faker.word())
-        #     tempTags.append(tag)
+            products, links = [], []
+            for row in chunk.itertuples():
+                products.append(Product(
+                    id=row.asin,
+                    name=row.title,
+                    image=row.imgUrl,
+                    stars=None if pd.isna(row.stars) else float(row.stars),
+                    price=to_decimal(row.price),
+                    stock=random.randint(0, 1000),
+                ))
+                if not pd.isna(row.categoryName):
+                    links.append(CatThrough(
+                        product_id=row.asin,
+                        category_id=cat_by_slug[slugify(row.categoryName)],
+                    ))
+                product_ids.append(row.asin)
 
-        # tags = Tag.objects.bulk_create(tempTags)
+            with transaction.atomic():
+                Product.objects.bulk_create(products, ignore_conflicts=True)
+                CatThrough.objects.bulk_create(links, ignore_conflicts=True)
 
-        # # 2. Category seeding
+            done += len(chunk)
+            self.log(f"seeding products ({done} rows)")
 
-        # # Logging
-        # self.log("Starting Category seeding...")
+        # 4. Reviews (4M, built and inserted 5,000 at a time)
+        self.log("Starting Review seeding...")
+        reviewLength = AMOUNT_SEEDING * 2
+        comment_pool = [faker.text(max_nb_chars=random.randint(
+            300, 1000)) for _ in range(1_000)]
+        now = timezone.now()
+        five_years = 5 * 365 * 24 * 3600
 
-        # temp_categories = []
-        # categoryLength = 1000
-        # i = 0
-        # seen = set()
-        # while len(temp_categories) < categoryLength:
-        #     # Logging
-        #     self.log("seeding categories", k=i, n=categoryLength)
-        #     i += 1
-        #     unslugged = " ".join(faker.words(nb=2)).title()
-        #     slug = slugify(unslugged)
-        #     if slug in seen:
-        #         continue
-        #     seen.add(slug)
-        #     temp_categories.append(Category(name=unslugged, slug=slug))
-
-        # # Create category tree (parents are always earlier in the list, so they're saved first)
-        # for index, category in enumerate(temp_categories):
-        #     if index > 0 and random.random() < 0.3:
-        #         category.parent = random.choice(
-        #             temp_categories[:index])
-        #     category.save()
-
-        # categories = temp_categories
-
-        # # # 3. User seeding
-
-        # # Logging
-        # self.log("Starting User seeding...")
-
-        # tempUser = []
-        # hash = make_password("test1234")
-        # userLength = 1000
-
-        # for i in range(userLength):
-        #     # Logging
-        #     self.log("seeding users", k=i, n=userLength)
-        #     user = User(
-        #         username=faker.unique.user_name(),
-        #         first_name=faker.first_name(),
-        #         last_name=faker.last_name(),
-        #         email=faker.email(),
-        #         password=hash
-        #     )
-        #     tempUser.append(user)
-
-        # users = User.objects.bulk_create(tempUser)
-
-        # # 4. Product seeding
-        # tempProduct = []
-        # productLength = 50000
-
-        # # Logging
-        # self.log("Starting Product seeding...")
-
-        # for i in range(productLength):
-        #     # Logging
-        #     self.log("seeding products", k=i, n=productLength)
-
-        #     product = Product(
-        #         name=faker.catch_phrase(),
-        #         description=faker.paragraph(nb_sentences=5),
-        #         price=round(random.uniform(0, 1000), 2),
-        #         stock=random.randint(0, 1000)
-        #     )
-        #     tempProduct.append(product)
-
-        # products = Product.objects.bulk_create(
-        #     tempProduct, batch_size=500)
-
-        # # 5. Link tag and category to product
-
-        # # Logging
-        # self.log("Starting Linking category and tag to product..")
-
-        # CatThrough = Product.categories.through
-        # TagThrough = Product.tags.through
-        # cat_links, tag_links = [], []
-        # for p in products:
-        #     for c in random.sample(categories, k=1):
-        #         cat_links.append(CatThrough(
-        #             product_id=p.pk, category_id=c.pk))
-        #     if random.random() < 0.7:
-        #         for t in random.sample(tags, k=random.randint(0, 3)):
-        #             tag_links.append(TagThrough(
-        #                 product_id=p.pk, tag_id=t.pk))
-        # CatThrough.objects.bulk_create(cat_links, batch_size=500)
-        # TagThrough.objects.bulk_create(tag_links, batch_size=500)
-
-        # # 6. Review seeding
-
-        # # Logging
-        # self.log("Starting Review seeding...")
-
-        # tempReview = []
-        # reviewLength = 50000
-
-        # for i in range(reviewLength):
-        #     # Logging
-        #     self.log("seeding reviews", k=i, n=reviewLength)
-
-        #     review = Review(
-        #         rating=random.randint(1, 5),
-        #         comment=faker.text(
-        #             max_nb_chars=random.randint(300, 1000)),
-        #         created_at=faker.date_time_between(
-        #             start_date='-5y', end_date='now'),
-        #         user=random.choice(users),
-        #         product=random.choice(products),
-        #     )
-        #     tempReview.append(review)
-
-        # reviews = Review.objects.bulk_create(
-        #     tempReview, batch_size=500)
+        for start in range(0, reviewLength, BATCH):
+            size = min(BATCH, reviewLength - start)
+            batch = [
+                Review(
+                    rating=random.randint(1, 5),
+                    comment=random.choice(comment_pool),
+                    created_at=now -
+                    timedelta(seconds=random.randint(0, five_years)),
+                    user_id=random.choice(user_ids),
+                    product_id=random.choice(product_ids),
+                )
+                for _ in range(size)
+            ]
+            with transaction.atomic():
+                Review.objects.bulk_create(batch)
+            if (start // BATCH) % 20 == 0:
+                self.log("seeding reviews", k=start + size - 1, n=reviewLength)
 
         # # 7. Order seeding
 
@@ -219,4 +195,4 @@ class Command(BaseCommand):
 
         # orderItems = OrderItem.objects.bulk_create(tempOrderItem)
 
-        # self.log("Database has been seeded successfully", "success")
+        self.log("Database has been seeded successfully", "success")

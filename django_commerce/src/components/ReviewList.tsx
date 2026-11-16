@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react'
 import type { Review } from '../api/types'
 import { useUsers } from '../contexts/UsersContext'
 import {
-  averageRating,
   displayName,
   formatDate,
   formatReviewCount,
@@ -11,7 +10,7 @@ import {
 import { RatingStars } from './RatingStars'
 import { StarIcon } from './icons'
 
-export function ReviewList({ reviews }: { reviews: Review[] }) {
+export function ReviewList({ reviews, rating }: { reviews: Review[]; rating: number }) {
   const { users, getUser } = useUsers()
 
   const sortedReviews = useMemo(
@@ -31,7 +30,6 @@ export function ReviewList({ reviews }: { reviews: Review[] }) {
     })
   }, [getUser, sortedReviews])
 
-  const rating = averageRating(reviews)
   const distribution = [5, 4, 3, 2, 1].map((value) => ({
     value,
     count: reviews.filter((review) => review.rating === value).length,

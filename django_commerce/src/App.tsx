@@ -8,7 +8,6 @@ import { CategoryDetailPage } from './pages/CategoryDetailPage'
 import { HomePage } from './pages/HomePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ProductDetailPage } from './pages/ProductDetailPage'
-import { TagsPage } from './pages/TagsPage'
 
 function App() {
   return (
@@ -23,7 +22,6 @@ function App() {
             <Route path="products/:productId" element={<ProductDetailPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="categories/:categoryId" element={<CategoryDetailPage />} />
-            <Route path="tags" element={<TagsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

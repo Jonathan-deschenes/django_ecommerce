@@ -9,12 +9,6 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'parent']
 
 
-class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = ['id', 'name']
-
-
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
@@ -23,13 +17,12 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     categories = CategorySerializer(many=True, read_only=True)
-    tags = TagSerializer(many=True, read_only=True)
     reviews = ReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
-        fields = ["id", "name", "description", "price",
-                  "stock", "is_active", "categories", "tags", 'reviews', "created_at"]
+        fields = ["id", "name", "image", "price", "stars",
+                  "stock", "is_active", "categories", 'reviews', "created_at"]
 
 
 class UserSerializer(serializers.ModelSerializer):

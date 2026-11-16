@@ -44,9 +44,6 @@ export function Layout() {
             <NavLink to="/categories" className={navClassName}>
               Catégories
             </NavLink>
-            <NavLink to="/tags" className={navClassName}>
-              Tags
-            </NavLink>
           </nav>
         </div>
       </header>

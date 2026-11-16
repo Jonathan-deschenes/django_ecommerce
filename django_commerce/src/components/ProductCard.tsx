@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom'
 import type { Product } from '../api/types'
-import { averageRating, formatPrice, formatReviewCount } from '../lib/format'
+import { formatPrice, formatReviewCount, productRating } from '../lib/format'
 import { ProductImage } from './ProductImage'
 import { RatingStars } from './RatingStars'
 
 export function ProductCard({ product }: { product: Product }) {
-  const rating = averageRating(product.reviews)
+  const rating = productRating(product.stars, product.reviews)
   const category = product.categories[0]
 
   return (
@@ -34,9 +34,6 @@ export function ProductCard({ product }: { product: Product }) {
         <h3 className="mt-3 line-clamp-2 text-base font-semibold leading-6 text-slate-900 group-hover:text-indigo-700">
           {product.name}
         </h3>
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">
-          {product.description}
-        </p>
 
         <div className="mt-auto flex items-end justify-between gap-3 pt-5">
           <div>

@@ -10,16 +10,16 @@ import { retrieveProduct } from '../api/client'
 import type { Product } from '../api/types'
 
 interface ProductContextValue {
-  fetchProduct: (id: number) => Promise<Product>
+  fetchProduct: (id: string) => Promise<Product>
 }
 
 const ProductContext = createContext<ProductContextValue | null>(null)
 
 export function ProductProvider({ children }: { children: ReactNode }) {
-  const cache = useRef(new Map<number, Product>())
-  const inFlight = useRef(new Map<number, Promise<Product>>())
+  const cache = useRef(new Map<string, Product>())
+  const inFlight = useRef(new Map<string, Promise<Product>>())
 
-  const fetchProduct = useCallback((id: number) => {
+  const fetchProduct = useCallback((id: string) => {
     const cachedProduct = cache.current.get(id)
     if (cachedProduct) {
       return Promise.resolve(cachedProduct)

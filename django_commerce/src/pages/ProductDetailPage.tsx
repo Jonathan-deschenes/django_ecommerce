@@ -9,7 +9,6 @@ import { EmptyState, ErrorState, PageLoading } from '../components/States'
 import { ArrowLeftIcon } from '../components/icons'
 import { useProduct } from '../contexts/ProductContext'
 import {
-  averageRating,
   formatPrice,
   formatReviewCount,
   formatDate,
@@ -23,12 +22,10 @@ export function ProductDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
 
-  const numericProductId = Number(productId)
-
   useEffect(() => {
     let active = true
 
-    if (!Number.isInteger(numericProductId) || numericProductId <= 0) {
+    if (!productId) {
       setProduct(null)
       setError('Identifiant produit invalide.')
       setLoading(false)
@@ -41,7 +38,7 @@ export function ProductDetailPage() {
     setError(null)
     setProduct(null)
 
-    fetchProduct(numericProductId)
+    fetchProduct(productId)
       .then((nextProduct) => {
         if (!active) return
         setProduct(nextProduct)
@@ -60,7 +57,7 @@ export function ProductDetailPage() {
     return () => {
       active = false
     }
-  }, [fetchProduct, numericProductId, reloadToken])
+  }, [fetchProduct, productId, reloadToken])
 
   if (loading) {
     return (
@@ -111,7 +108,8 @@ export function ProductDetailPage() {
     )
   }
 
-  const rating = averageRating(product.reviews)
+  const parsedStars = Number.parseFloat(product.stars)
+  const rating = Number.isFinite(parsedStars) ? parsedStars : 0
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
@@ -180,35 +178,13 @@ export function ProductDetailPage() {
             {formatPrice(product.price)}
           </p>
 
-          <p className="mt-5 whitespace-pre-line text-base leading-7 text-slate-600">
-            {product.description}
-          </p>
-
-          {product.tags.length > 0 ? (
-            <div className="mt-6">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Tags
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {product.tags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600"
-                  >
-                    #{tag.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
           <p className="mt-6 text-xs text-slate-400">
             Ajouté au catalogue le {formatDate(product.created_at)}
           </p>
         </div>
       </div>
 
-      <ReviewList reviews={product.reviews} />
+      <ReviewList reviews={product.reviews} rating={rating} />
     </div>
   )
 }

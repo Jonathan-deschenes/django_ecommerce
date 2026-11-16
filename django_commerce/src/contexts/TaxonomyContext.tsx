@@ -7,15 +7,13 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { listAllCategories, listAllTags } from '../api/client'
-import type { Category, Tag } from '../api/types'
+import { listAllCategories } from '../api/client'
+import type { Category } from '../api/types'
 import { buildCategoryTree, type CategoryTreeNode } from '../lib/categoryTree'
 
 interface TaxonomyContextValue {
   categories: Category[]
-  tags: Tag[]
   categoryById: Map<number, Category>
-  tagById: Map<number, Tag>
   categoryTree: CategoryTreeNode[]
   loading: boolean
   error: string | null
@@ -26,7 +24,6 @@ const TaxonomyContext = createContext<TaxonomyContextValue | null>(null)
 
 export function TaxonomyProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([])
-  const [tags, setTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadToken, setReloadToken] = useState(0)
@@ -37,10 +34,9 @@ export function TaxonomyProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     setError(null)
 
-    Promise.all([listAllCategories(controller.signal), listAllTags(controller.signal)])
-      .then(([nextCategories, nextTags]) => {
+    listAllCategories(controller.signal)
+      .then((nextCategories) => {
         setCategories(nextCategories)
-        setTags(nextTags)
         setLoading(false)
       })
       .catch((cause: unknown) => {
@@ -49,7 +45,7 @@ export function TaxonomyProvider({ children }: { children: ReactNode }) {
         setError(
           cause instanceof Error
             ? cause.message
-            : 'Impossible de charger les catégories et les tags.',
+            : 'Impossible de charger les catégories.',
         )
         setLoading(false)
       })
@@ -60,11 +56,6 @@ export function TaxonomyProvider({ children }: { children: ReactNode }) {
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [category.id, category])),
     [categories],
-  )
-
-  const tagById = useMemo(
-    () => new Map(tags.map((tag) => [tag.id, tag])),
-    [tags],
   )
 
   const categoryTree = useMemo(
@@ -79,9 +70,7 @@ export function TaxonomyProvider({ children }: { children: ReactNode }) {
   const value = useMemo<TaxonomyContextValue>(
     () => ({
       categories,
-      tags,
       categoryById,
-      tagById,
       categoryTree,
       loading,
       error,
@@ -94,8 +83,6 @@ export function TaxonomyProvider({ children }: { children: ReactNode }) {
       error,
       loading,
       reload,
-      tagById,
-      tags,
     ],
   )
 

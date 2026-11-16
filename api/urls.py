@@ -5,7 +5,7 @@ urlpatterns = [
     # Products objects routes
     path("product/", views.ProductListCreate.as_view(),
          name="Product-list-create-view"),
-    path("product/<int:pk>/", views.ProductRetrieveUpdateDestroy.as_view(),
+    path("product/<str:pk>/", views.ProductRetrieveUpdateDestroy.as_view(),
          name="Product-update-destroy-view"),
 
     # Categories objects routes
@@ -13,12 +13,6 @@ urlpatterns = [
          name="Category-list-create-view"),
     path("category/<int:pk>", views.CategoryRetrieveupdateDestroy.as_view(),
          name="Category-update-destroy-view"),
-
-    # Tags objects routes
-    path("tag/", views.TagListCreate.as_view(),
-         name="Tag-list-create-view"),
-    path("tag/<int:pk>/", views.TagRetrieveUpdateDestroy.as_view(),
-         name="Tag-update-destroy-view"),
 
     # Reviews objects routes
     path("review/",

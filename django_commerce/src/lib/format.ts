@@ -32,6 +32,19 @@ export function averageRating(reviews: { rating: number }[]): number {
   return reviews.reduce((total, review) => total + review.rating, 0) / reviews.length
 }
 
+export function productRating(
+  stars: string | number | null | undefined,
+  reviews: { rating: number }[],
+): number {
+  const parsed = typeof stars === 'string' ? Number.parseFloat(stars) : stars
+
+  if (typeof parsed === 'number' && Number.isFinite(parsed) && parsed > 0) {
+    return Math.min(5, parsed)
+  }
+
+  return averageRating(reviews)
+}
+
 export function formatReviewCount(count: number): string {
   return count === 1 ? '1 avis' : `${formatNumber(count)} avis`
 }

@@ -38,21 +38,6 @@ class CategoryRetrieveupdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CategorySerializer
     lookup_field = 'pk'
 
-# Product Tags views
-
-
-class TagListCreate(generics.ListCreateAPIView):
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name']
-
-
-class TagRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-    lookup_field = 'pk'
-
 # Review views
 
 

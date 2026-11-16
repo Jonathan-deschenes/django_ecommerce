@@ -11,7 +11,7 @@ const HOME_CATEGORY_ROWS = 6
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { categories, tags, loading, error, reload } = useTaxonomy()
+  const { categories, loading, error, reload } = useTaxonomy()
   const [search, setSearch] = useState('')
 
   const rows = useMemo(() => {
@@ -96,10 +96,6 @@ export function HomePage() {
               <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
                 Catégories
               </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-              <p className="text-2xl font-semibold">{formatNumber(tags.length)}</p>
-              <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">Tags</p>
             </div>
           </div>
         </div>

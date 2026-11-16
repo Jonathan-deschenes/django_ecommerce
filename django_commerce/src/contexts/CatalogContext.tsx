@@ -132,7 +132,6 @@ export function CatalogProvider({
     if (filters.inStock !== undefined) count += 1
     if (filters.isActive !== undefined) count += 1
     if (scopeCategoryIds.length === 0 && filters.categoryIds?.length) count += 1
-    if (filters.tagIds?.length) count += 1
 
     return count
   }, [filters, scopeCategoryIds])

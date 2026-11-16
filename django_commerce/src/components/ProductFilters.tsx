@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { searchCategories, searchTags } from '../api/client'
+import { searchCategories } from '../api/client'
 import type { Category } from '../api/types'
 import { useCatalog } from '../contexts/CatalogContext'
 import { useTaxonomy } from '../contexts/TaxonomyContext'
@@ -20,14 +20,6 @@ async function searchCategoryItems(
   signal: AbortSignal,
 ): Promise<CheckboxItem[]> {
   const response = await searchCategories(query, 50, 0, signal)
-  return response.results
-}
-
-async function searchTagItems(
-  query: string,
-  signal: AbortSignal,
-): Promise<CheckboxItem[]> {
-  const response = await searchTags(query, 50, 0, signal)
   return response.results
 }
 
@@ -265,7 +257,6 @@ export function ProductFilters({
   } = useCatalog()
   const {
     categories,
-    tags,
     loading: taxonomyLoading,
     error: taxonomyError,
   } = useTaxonomy()
@@ -273,11 +264,6 @@ export function ProductFilters({
   const sortedCategories = useMemo(
     () => [...categories].sort((left, right) => left.name.localeCompare(right.name, 'fr')),
     [categories],
-  )
-
-  const sortedTags = useMemo(
-    () => [...tags].sort((left, right) => left.name.localeCompare(right.name, 'fr')),
-    [tags],
   )
 
   const inStockValue = filters.inStock === undefined ? '' : String(filters.inStock)
@@ -288,15 +274,6 @@ export function ProductFilters({
     applyFilters({
       categoryIds: current.includes(id)
         ? current.filter((categoryId) => categoryId !== id)
-        : [...current, id],
-    })
-  }
-
-  const toggleTag = (id: number) => {
-    const current = filters.tagIds ?? []
-    applyFilters({
-      tagIds: current.includes(id)
-        ? current.filter((tagId) => tagId !== id)
         : [...current, id],
     })
   }
@@ -406,7 +383,7 @@ export function ProductFilters({
           </fieldset>
 
           <fieldset>
-            <legend className={labelClassName}>Note moyenne</legend>
+            <legend className={labelClassName}>Note</legend>
             <div className="mt-2 space-y-2">
               <StarRatingFilter
                 label="Note minimale"
@@ -463,24 +440,6 @@ export function ProductFilters({
             </select>
           </div>
 
-          <fieldset>
-            <legend className={labelClassName}>
-              Tags
-              {filters.tagIds?.length ? ` (${filters.tagIds.length})` : ''}
-            </legend>
-            <div className="mt-2">
-              <SearchableCheckboxList
-                items={sortedTags}
-                selectedIds={filters.tagIds ?? []}
-                onToggle={toggleTag}
-                loading={taxonomyLoading}
-                error={taxonomyError}
-                emptyLabel="Aucun tag disponible"
-                searchPlaceholder="Rechercher un tag…"
-                search={searchTagItems}
-              />
-            </div>
-          </fieldset>
         </div>
 
         {!showHeader && hasActiveFilters ? (
